@@ -1,0 +1,21 @@
+[package]
+name = "lbz-down-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+actix-web = "4.12.1"
+actix-ws = "0.3.0"
+anyhow = "1.0.100"
+dotenvy = "0.15.7"
+env_logger = "0.11.8"
+futures-util = "0.3.31"
+listenbrainz = "0.8.1"
+log = "0.4.29"
+regex = "1.12.2"
+reqwest = { version = "0.13.1", features = ["json"] }
+rust_socketio = { version = "0.6.0", features = ["async"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+thiserror = "2.0.17"
+tokio = { version = "1.49.0", features = ["macros"] }
