@@ -217,8 +217,12 @@ async fn main() -> std::io::Result<()> {
                     }
                     .boxed()
                 })
-                .on("error", |err, _| {
-                    async move { error!("Error: {:#?}", err) }.boxed()
+                .on("error", |err, socket| {
+                    async move {
+                        error!("Error: {:#?}", err);
+                        socket.disconnect().await.unwrap()
+                    }
+                    .boxed()
                 })
                 .reconnect_on_disconnect(true);
             match socket_builder.connect().await {
