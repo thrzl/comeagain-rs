@@ -509,6 +509,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "comeagain"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+ "actix-ws",
+ "anyhow",
+ "dotenvy",
+ "env_logger",
+ "futures-util",
+ "listenbrainz",
+ "log",
+ "regex",
+ "reqwest 0.13.1",
+ "rust_socketio",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "tokio",
+]
+
+[[package]]
 name = "convert_case"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1270,27 +1291,6 @@ name = "language-tags"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d4345964bb142484797b161f473a503a434de77149dd8c7427788c6e13379388"
-
-[[package]]
-name = "lbz-down-rs"
-version = "0.1.0"
-dependencies = [
- "actix-web",
- "actix-ws",
- "anyhow",
- "dotenvy",
- "env_logger",
- "futures-util",
- "listenbrainz",
- "log",
- "regex",
- "reqwest 0.13.1",
- "rust_socketio",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
- "tokio",
-]
 
 [[package]]
 name = "libc"
