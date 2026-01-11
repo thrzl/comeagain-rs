@@ -10,7 +10,7 @@ pub struct CaloreResponse {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Artist {
     pub artist_credit_name: String,
-    pub artist_mbid: String,
+    pub artist_mbid: Option<String>,
     pub join_phrase: String,
     pub url: Option<String>,
 }
@@ -58,7 +58,7 @@ impl TransformedTrack {
             .enumerate()
             .map(|(i, name)| Artist {
                 artist_credit_name: name.clone(),
-                artist_mbid: artist_mbids.get(0).cloned().unwrap_or_default(),
+                artist_mbid: artist_mbids.get(0).cloned(),
                 join_phrase: ", ".to_string(),
                 url: Some(artist_urls[i].to_string()),
             })
