@@ -1,5 +1,7 @@
 mod types;
 
+use std::time::Duration;
+
 use crate::types::{
     CaloreResponse, TransformedTrack, UserPlayingNowListen, UserPlayingNowTrackMetadata,
 };
@@ -98,23 +100,27 @@ async fn ws_handler(
             .text(serde_json::to_string(&*rx.borrow_and_update()).unwrap())
             .await
             .unwrap();
-        // receive messages from websocket
+
+        let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(5));
+
         loop {
+            let tick = heartbeat_interval.tick();
+            tokio::pin!(tick);
+
             tokio::select! {
                 _ = rx.changed() => {
-                    let msg = &*rx.borrow_and_update();
+                    let msg = rx.borrow();
                     session
-                        .text(serde_json::to_string(msg).unwrap())
+                        .text(serde_json::to_string(&*msg).unwrap())
                         .await
                         .unwrap();
                 }
                 msg = stream.next() => {
-                        if let Some(Ok(msg)) = msg {
+                    if let Some(Ok(msg)) = msg {
                         match msg {
                             AggregatedMessage::Ping(bytes) => {
-                                session.pong(&bytes).await.unwrap();
-                            }
-
+                                let _ = session.pong(&bytes).await;
+                            },
                             AggregatedMessage::Close(reason) => {
                                 println!("socket closed");
                                 break reason
@@ -122,7 +128,9 @@ async fn ws_handler(
                             _ => {}
                         }
                     }
-
+                }
+                _ = tick => {
+                    let _ = session.ping(&[]).await;
                 }
             }
         }
@@ -186,6 +194,7 @@ async fn main() -> std::io::Result<()> {
         loop {
             let tx = tx.clone();
             let socket_builder = SocketIOClientBuilder::new("https://listenbrainz.org")
+                .transport_type(rust_socketio::TransportType::Websocket)
                 .on("playing_now", move |payload, _| {
                     let tx = tx.clone();
                     let client = Client::new();
