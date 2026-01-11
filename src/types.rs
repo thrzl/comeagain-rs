@@ -58,7 +58,7 @@ impl TransformedTrack {
             .enumerate()
             .map(|(i, name)| Artist {
                 artist_credit_name: name.clone(),
-                artist_mbid: artist_mbids[i].to_string(),
+                artist_mbid: artist_mbids.get(0).cloned().unwrap_or_default(),
                 join_phrase: ", ".to_string(),
                 url: Some(artist_urls[i].to_string()),
             })
