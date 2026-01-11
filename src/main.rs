@@ -127,7 +127,7 @@ async fn ws_handler(
                                 let _ = session.pong(&bytes).await;
                             },
                             AggregatedMessage::Close(reason) => {
-                                println!("socket closed");
+                                info!("socket closed");
                                 break reason
                             },
                             _ => {}
@@ -204,6 +204,7 @@ async fn main() -> std::io::Result<()> {
                 .on("playing_now", move |payload, _| {
                     let tx = tx.clone();
                     let client = Client::new();
+                    info!("received new track message");
 
                     async move {
                         let payload: Value = if let Payload::Text(payload) = payload {
