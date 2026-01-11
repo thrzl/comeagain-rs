@@ -1,5 +1,6 @@
 mod types;
 
+use std::sync::Arc;
 use std::time::Duration;
 
 use crate::types::{
@@ -15,12 +16,16 @@ use futures_util::{FutureExt, StreamExt};
 use log::{error, info};
 use regex::Regex;
 use reqwest::Client;
-use rust_socketio::{Payload, asynchronous::ClientBuilder as SocketIOClientBuilder};
+use rust_socketio::{
+    Payload,
+    asynchronous::{Client as SocketIOClient, ClientBuilder as SocketIOClientBuilder},
+};
 use serde_json::{Value, json};
 use tokio::sync::watch;
 
 struct AppState {
     rx: watch::Receiver<TransformedTrack>,
+    socketio: Arc<SocketIOClient>,
 }
 
 async fn enrich_track(client: &Client, track: &TransformedTrack) -> Result<TransformedTrack> {
@@ -252,7 +257,9 @@ async fn main() -> std::io::Result<()> {
 
     info!("subscribed to user");
 
+    let socket = Arc::new(socket);
     HttpServer::new(move || {
+        let socket = socket.clone();
         let logger = Logger::default();
         let rx = rx.clone();
         App::new()
@@ -260,11 +267,13 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::new("%a %{User-Agent}i"))
             .service(web::resource("/ws").route(web::get().to(ws_handler)))
             .route("/", web::get().to(home))
-            .app_data(web::Data::new(AppState { rx }))
+            .app_data(web::Data::new(AppState {
+                rx,
+                socketio: socket,
+            }))
     })
     .bind(("0.0.0.0", 8080))?
     .run()
     .await?;
-    socket.disconnect().await.unwrap();
     Ok(())
 }
