@@ -9,7 +9,7 @@ use crate::types::{
 use actix_web::{
     App, Error, HttpRequest, HttpResponse, HttpServer, Responder, middleware::Logger, rt, web,
 };
-use actix_ws::{AggregatedMessage, CloseReason};
+use actix_ws::AggregatedMessage;
 use anyhow::Result;
 use env_logger::Env;
 use futures_util::{FutureExt, StreamExt};
@@ -25,7 +25,7 @@ use tokio::sync::watch;
 
 struct AppState {
     rx: watch::Receiver<TransformedTrack>,
-    socketio: Arc<SocketIOClient>,
+    _socketio: Arc<SocketIOClient>,
 }
 
 async fn enrich_track(client: &Client, track: &TransformedTrack) -> Result<TransformedTrack> {
@@ -185,7 +185,7 @@ async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
     let _ = dotenvy::dotenv();
-    let user = std::env::var("LISTENBRAINZ_USER").expect("USER env var should be set");
+    let user = Arc::new(std::env::var("LISTENBRAINZ_USER").expect("USER env var should be set"));
 
     info!("getting initial track");
     let last_track = get_last_track(&user).await;
@@ -199,8 +199,21 @@ async fn main() -> std::io::Result<()> {
     let socket = {
         loop {
             let tx = tx.clone();
+            let user = user.clone();
             let socket_builder = SocketIOClientBuilder::new("https://listenbrainz.org")
                 .transport_type(rust_socketio::TransportType::Websocket)
+                .on("open", move |_, socket| {
+                    let user = user.clone();
+                    info!("subscribing to user {user}");
+                    async move {
+                        socket
+                            .emit("json", json!({"user": *user}))
+                            .await
+                            .expect("listenbrainz server unreachable");
+                        info!("subscribed to user {user}");
+                    }
+                    .boxed()
+                })
                 .on("playing_now", move |payload, _| {
                     let tx = tx.clone();
                     let client = Client::new();
@@ -222,14 +235,22 @@ async fn main() -> std::io::Result<()> {
                             track.name, track.artists[0].artist_credit_name
                         );
 
-                        tx.send(match enrich_track(&client, &track).await {
-                            Ok(track) => track,
-                            Err(e) => {
-                                error!("failed to enrich track {}: {}", track.name, e.to_string());
-                                track
-                            }
-                        })
-                        .expect("failed to broadcast new track");
+                        tokio::spawn(async move {
+                            info!("enriching track...");
+                            tx.send(match enrich_track(&client, &track).await {
+                                Ok(track) => track,
+                                Err(e) => {
+                                    error!(
+                                        "failed to enrich track {}: {}",
+                                        track.name,
+                                        e.to_string()
+                                    );
+                                    track
+                                }
+                            })
+                            .expect("failed to broadcast new track");
+                            info!("broadcasted enriched track")
+                        });
                     }
                     .boxed()
                 })
@@ -251,13 +272,6 @@ async fn main() -> std::io::Result<()> {
     };
     info!("connected to listenbrainz socket");
 
-    socket
-        .emit("json", json!({"user": user}))
-        .await
-        .expect("listenbrainz server unreachable");
-
-    info!("subscribed to user");
-
     let socket = Arc::new(socket);
     HttpServer::new(move || {
         let socket = socket.clone();
@@ -270,7 +284,7 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(home))
             .app_data(web::Data::new(AppState {
                 rx,
-                socketio: socket,
+                _socketio: socket,
             }))
     })
     .bind(("0.0.0.0", 8080))?
