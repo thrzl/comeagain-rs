@@ -8,7 +8,7 @@ use crate::types::{
 use actix_web::{
     App, Error, HttpRequest, HttpResponse, HttpServer, Responder, middleware::Logger, rt, web,
 };
-use actix_ws::AggregatedMessage;
+use actix_ws::{AggregatedMessage, CloseReason};
 use anyhow::Result;
 use env_logger::Env;
 use futures_util::{FutureExt, StreamExt};
@@ -103,7 +103,7 @@ async fn ws_handler(
 
         let mut heartbeat_interval = tokio::time::interval(Duration::from_secs(5));
 
-        loop {
+        let close_reason = loop {
             let tick = heartbeat_interval.tick();
             tokio::pin!(tick);
 
@@ -133,7 +133,8 @@ async fn ws_handler(
                     let _ = session.ping(&[]).await;
                 }
             }
-        }
+        };
+        let _ = session.close(close_reason).await;
     });
 
     // respond immediately with response connected to WS session
