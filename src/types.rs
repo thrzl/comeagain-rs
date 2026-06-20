@@ -60,7 +60,12 @@ impl TransformedTrack {
                 artist_credit_name: name.clone(),
                 artist_mbid: artist_mbids.get(0).cloned(),
                 join_phrase: ", ".to_string(),
-                url: Some(artist_urls[i].to_string()),
+                url: Some(
+                    artist_urls
+                        .get(i)
+                        .map(|s| s.to_string())
+                        .unwrap_or_default(),
+                ),
             })
             .collect();
 
