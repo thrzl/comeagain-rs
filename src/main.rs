@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use crate::types::{
     CaloreResponse, TransformedTrack, UserPlayingNowListen, UserPlayingNowTrackMetadata,
+    deezer_track_search,
 };
 use actix_web::{
     App, Error, HttpRequest, HttpResponse, HttpServer, Responder, middleware::Logger, rt, web,
@@ -63,7 +64,9 @@ async fn enrich_track(client: &Client, track: &TransformedTrack) -> Result<Trans
             ))
         }
     } else {
-        None
+        deezer_track_search(&track)
+            .await
+            .and_then(|track| track.image_url)
     };
 
     let image_palette = if let Some(image_url) = &image_url {

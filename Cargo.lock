@@ -520,6 +520,7 @@ dependencies = [
  "futures-util",
  "listenbrainz",
  "log",
+ "percent-encoding",
  "regex",
  "reqwest 0.13.1",
  "rust_socketio",
