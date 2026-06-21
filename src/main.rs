@@ -71,7 +71,9 @@ async fn enrich_track(client: &Client, track: &TransformedTrack) -> Result<Trans
 
     let image_palette = if let Some(image_url) = &image_url {
         let calore_res = client
-            .get(format!("https://calore.thrzl.xyz/?image={image_url}"))
+            .get(format!(
+                "https://calore.twofortyeight.net/?image={image_url}"
+            ))
             .send()
             .await?;
         calore_res.error_for_status_ref()?;
